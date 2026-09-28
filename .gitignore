@@ -1,0 +1,5 @@
+token.txt
+tmdb_token.txt
+movies.db
+__pycache__/
+*.pyc
