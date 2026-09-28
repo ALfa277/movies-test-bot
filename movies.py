@@ -1,5 +1,8 @@
 import html
 import sqlite3
+import os
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import requests
 
 from pathlib import Path
@@ -16,8 +19,8 @@ from telegram.ext import (
 )
 
 
-BOT_TOKEN = Path("token.txt").read_text(encoding="utf-8").strip()
-TMDB_TOKEN = Path("tmdb_token.txt").read_text(encoding="utf-8").strip()
+BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
+TMDB_TOKEN = os.getenv("TMDB_TOKEN", "").strip()
 
 TMDB_URL = "https://api.themoviedb.org/3"
 DB_FILE = "movies.db"
@@ -575,7 +578,25 @@ async def home(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(b"Movies Bot OK")
+
+    def log_message(self, format, *args):
+        pass
+
+
+def start_health_server():
+    port = int(os.getenv("PORT", "10000"))
+    server = HTTPServer(("0.0.0.0", port), HealthHandler)
+    server.serve_forever()
+
+
 def main():
+    threading.Thread(target=start_health_server, daemon=True).start()
     if not BOT_TOKEN:
         raise RuntimeError("BOT TOKEN غير موجود في token.txt")
 
